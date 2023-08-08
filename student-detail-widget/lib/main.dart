@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:scroll_loop_auto_scroll/scroll_loop_auto_scroll.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:intl/intl.dart';
+import 'package:text_scroll/text_scroll.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 void main() {
   runApp(const MyApp());
@@ -119,77 +119,69 @@ class _StudentDetailListState extends State<StudentDetailList> {
     snihKey = snih.keys.toList();
   }
 
+  bool hasTextOverflow(String text, TextStyle style,
+      {double minWidth = 0,
+      double maxWidth = double.infinity,
+      int maxLines = 1}) {
+    final TextPainter textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: maxLines,
+      // textDirection: TextDirection.LTR ,
+    )..layout(minWidth: minWidth, maxWidth: maxWidth);
+    return textPainter.didExceedMaxLines;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Student Details"),
       ),
-      body: ListView.builder(
-        itemCount: snih.length,
-        itemBuilder: (context, index) {
-          String name = snih.keys.elementAt(index);
-          Map details = snih[name]!;
-          String rollno = details["uid"];
-          String block =  details["hostel_block"];
-          String roomno = details["hostel_room_number"];
-          DateFormat dateFormat = DateFormat("yyyy-MM-dd");
-          DateFormat timeFormat = DateFormat("HH:mm:ss");
-          DateTime dateTime = DateTime.parse(details["last_check_out"]);
-          String checkout = dateFormat.format(dateTime);
-          String checkin = timeFormat.format(dateTime);
-          return Padding(
-            padding: const EdgeInsets.all(5.0),
-            child: Card(
-              child: ListTile(
-                title: ScrollLoopAutoScroll(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 200,
-                          child: Text(name)),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 100),
-                        child: Text(rollno),
-                      ),
-                    ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          Future<void>.delayed(const Duration(seconds: 10));
+        },
+        child: ListView.builder(
+          itemCount: snih.length,
+          itemBuilder: (context, index) {
+            String name = snih.keys.elementAt(index);
+            Map details = snih[name]!;
+            String rollno = details["uid"];
+            String block = details["hostel_block"];
+            String roomno = details["hostel_room_number"];
+            DateFormat dateFormat = DateFormat("yyyy-MM-dd");
+            DateFormat timeFormat = DateFormat("HH:mm:ss");
+            DateTime dateTime = DateTime.parse(details["last_check_out"]);
+            String checkout = dateFormat.format(dateTime);
+            String checkin = timeFormat.format(dateTime);
+            return Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: Card(
+                child: ListTile(
+                  leading: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [Text(block), Text(roomno)],
+                  ),
+                  title: TextScroll(
+                    "$name-$rollno  ",
+                    mode: TextScrollMode.endless,
+                    pauseBetween: const Duration(seconds: 10),
+                    // textDirection: TextDirection.LTR ?? ,
+                    textAlign: TextAlign.left,
+                  ),
+                  subtitle: Text("$checkout  $checkin"),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.call),
+                    onPressed: () {
+                      launchUrlString("tel:${details["phone"]}");
+                    },
                   ),
                 ),
-                subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const SizedBox(
-                            width: 70,
-                            child: Text("Room No:  "),
-                          ),
-                          Text("$block-$roomno")
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          const SizedBox(
-                            width: 70,
-                              child: Text("Checkout:")),
-                          Text("$checkout  $checkin")
-                        ],
-                      )
-                    ]),
-                trailing: ElevatedButton(
-                  child: const Icon(Icons.call),
-                  onPressed: () {
-                    launchUrlString("tel:${details["phone"]}");
-                  },/**/
-                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 }
-
-
